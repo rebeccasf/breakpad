@@ -146,6 +146,14 @@
 #endif
 #define FPREGS_OFFSET_MXCSR  24
 
+#elif defined(__riscv)
+
+#define UCONTEXT_SIGMASK_OFFSET   40
+
+#define MCONTEXT_GREGS_OFFSET     176
+#define MCONTEXT_FPREGS_OFFSET    432
+#define MCONTEXT_FSR_OFFSET       (MCONTEXT_FPREGS_OFFSET + 32*8)
+
 #else
 #error "This header has not been ported for your CPU"
 #endif
