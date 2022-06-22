@@ -112,6 +112,9 @@ bool LinuxCoreDumper::GetThreadInfoByIndex(size_t index, ThreadInfo* info) {
 #elif defined(__mips__)
   stack_pointer =
       reinterpret_cast<uint8_t*>(info->mcontext.gregs[MD_CONTEXT_MIPS_REG_SP]);
+#elif defined(__riscv)
+  stack_pointer =
+      reinterpret_cast<uint8_t*>(info->mcontext.__gregs[MD_CONTEXT_RISCV64_REG_SP]);
 #else
 #error "This code hasn't been ported to your platform yet."
 #endif
@@ -218,6 +221,8 @@ bool LinuxCoreDumper::EnumerateThreads() {
         info.mcontext.mdlo = status->pr_reg[EF_LO];
         info.mcontext.mdhi = status->pr_reg[EF_HI];
         info.mcontext.pc = status->pr_reg[EF_CP0_EPC];
+#elif defined(__riscv)
+        memcpy(info.mcontext.__gregs, status->pr_reg, sizeof(info.mcontext.__gregs));
 #else  // __mips__
         memcpy(&info.regs, status->pr_reg, sizeof(info.regs));
 #endif  // __mips__

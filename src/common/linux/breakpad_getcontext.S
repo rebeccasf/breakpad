@@ -526,6 +526,67 @@ breakpad_getcontext:
   ret
   .cfi_endproc
   .size breakpad_getcontext, . - breakpad_getcontext
+#elif defined(__riscv) && __riscv_xlen == 64
+
+#define __NR_rt_sigprocmask 135
+#define _NSIG8 64 / 8
+#define SIG_BLOCK 0
+
+  .text
+  .global breakpad_getcontext
+  .hidden breakpad_getcontext
+  .type breakpad_getcontext, @function
+  .align 2
+breakpad_getcontext:
+  sd ra, MCONTEXT_GREGS_OFFSET + 0*8(a0)
+  sd ra, MCONTEXT_GREGS_OFFSET + 1*8(a0)
+  sd sp, MCONTEXT_GREGS_OFFSET + 2*8(a0)
+  sd s0, MCONTEXT_GREGS_OFFSET + 8*8(a0)
+  sd s1, MCONTEXT_GREGS_OFFSET + 9*8(a0)
+  sd x0, MCONTEXT_GREGS_OFFSET + 10*8(a0)	/* return 0 by overwriting a0.  */
+  sd s2, MCONTEXT_GREGS_OFFSET + 18*8(a0)
+  sd s3, MCONTEXT_GREGS_OFFSET + 19*8(a0)
+  sd s4, MCONTEXT_GREGS_OFFSET + 20*8(a0)
+  sd s5, MCONTEXT_GREGS_OFFSET + 21*8(a0)
+  sd s6, MCONTEXT_GREGS_OFFSET + 22*8(a0)
+  sd s7, MCONTEXT_GREGS_OFFSET + 23*8(a0)
+  sd s8, MCONTEXT_GREGS_OFFSET + 24*8(a0)
+  sd s9, MCONTEXT_GREGS_OFFSET + 25*8(a0)
+  sd s10, MCONTEXT_GREGS_OFFSET + 26*8(a0)
+  sd s11, MCONTEXT_GREGS_OFFSET + 27*8(a0)
+
+#ifndef __riscv_float_abi_soft
+  frsr	a1
+
+  fsd fs0, MCONTEXT_FPREGS_OFFSET + 8*8(a0)
+  fsd fs1, MCONTEXT_FPREGS_OFFSET + 9*8(a0)
+  fsd fs2, MCONTEXT_FPREGS_OFFSET + 18*8(a0)
+  fsd fs3, MCONTEXT_FPREGS_OFFSET + 19*8(a0)
+  fsd fs4, MCONTEXT_FPREGS_OFFSET + 20*8(a0)
+  fsd fs5, MCONTEXT_FPREGS_OFFSET + 21*8(a0)
+  fsd fs6, MCONTEXT_FPREGS_OFFSET + 22*8(a0)
+  fsd fs7, MCONTEXT_FPREGS_OFFSET + 23*8(a0)
+  fsd fs8, MCONTEXT_FPREGS_OFFSET + 24*8(a0)
+  fsd fs9, MCONTEXT_FPREGS_OFFSET + 25*8(a0)
+  fsd fs10, MCONTEXT_FPREGS_OFFSET + 26*8(a0)
+  fsd fs11, MCONTEXT_FPREGS_OFFSET + 27*8(a0)
+
+  sw	a1, MCONTEXT_FSR_OFFSET(a0)
+#endif /* __riscv_float_abi_soft */
+
+/* rt_sigprocmask (SIG_BLOCK, NULL, &ucp->uc_sigmask, _NSIG / 8) */
+  li	a3, _NSIG8
+  add	a2, a0, UCONTEXT_SIGMASK_OFFSET
+  mv	a1, zero
+  li	a0, SIG_BLOCK
+
+  li	a7, __NR_rt_sigprocmask
+  scall
+
+  /* Always return 0 for success, even if sigprocmask failed. */
+  mv	a0, zero
+  ret
+  .size breakpad_getcontext, . - breakpad_getcontext
 
 #else
 #error "This file has not been ported for your CPU!"

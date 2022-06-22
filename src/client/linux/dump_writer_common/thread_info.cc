@@ -270,7 +270,22 @@ void ThreadInfo::FillCPUContext(RawContextCPU* out) const {
   out->float_save.fir = mcontext.fpc_eir;
 #endif
 }
-#endif  // __mips__
+#elif defined(__riscv)
+
+uintptr_t ThreadInfo::GetInstructionPointer() const {
+  return mcontext.__gregs[REG_PC];
+}
+
+void ThreadInfo::FillCPUContext(RawContextCPU* out) const {
+  out->context_flags = MD_CONTEXT_RISCV64_FULL;
+  my_memcpy (out->iregs, mcontext.__gregs, MD_CONTEXT_RISCV64_GPR_COUNT * 8);
+
+  out->float_save.fcsr = mcontext.__fpregs.__d.__fcsr;
+  my_memcpy(&out->float_save.regs, &mcontext.__fpregs.__d.__f,
+      MD_FLOATINGSAVEAREA_RISCV64_FPR_COUNT * 8);
+}
+
+#endif  // __riscv
 
 void ThreadInfo::GetGeneralPurposeRegisters(void** gp_regs, size_t* size) {
   assert(gp_regs || size);
@@ -279,6 +294,11 @@ void ThreadInfo::GetGeneralPurposeRegisters(void** gp_regs, size_t* size) {
     *gp_regs = mcontext.gregs;
   if (size)
     *size = sizeof(mcontext.gregs);
+#elif defined(__riscv)
+  if (gp_regs)
+    *gp_regs = mcontext.__gregs;
+  if (size)
+    *size = sizeof(mcontext.__gregs);
 #else
   if (gp_regs)
     *gp_regs = &regs;
@@ -294,6 +314,11 @@ void ThreadInfo::GetFloatingPointRegisters(void** fp_regs, size_t* size) {
     *fp_regs = &mcontext.fpregs;
   if (size)
     *size = sizeof(mcontext.fpregs);
+#elif defined(__riscv)
+  if (fp_regs)
+    *fp_regs = &mcontext.__fpregs;
+  if (size)
+    *size = sizeof(mcontext.__fpregs);
 #else
   if (fp_regs)
     *fp_regs = &fpregs;
