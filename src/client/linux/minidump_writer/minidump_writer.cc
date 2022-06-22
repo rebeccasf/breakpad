@@ -141,7 +141,7 @@ class MinidumpWriter {
       : fd_(minidump_fd),
         path_(minidump_path),
         ucontext_(context ? &context->context : NULL),
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if !defined(__ARM_EABI__) && !defined(__mips__) && !defined(__riscv)
         float_state_(context ? &context->float_state : NULL),
 #endif
         dumper_(dumper),
@@ -473,7 +473,7 @@ class MinidumpWriter {
         if (!cpu.Allocate())
           return false;
         my_memset(cpu.get(), 0, sizeof(RawContextCPU));
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if !defined(__ARM_EABI__) && !defined(__mips__) && !defined(__riscv)
         UContextReader::FillCPUContext(cpu.get(), ucontext_, float_state_);
 #else
         UContextReader::FillCPUContext(cpu.get(), ucontext_);
@@ -950,7 +950,7 @@ class MinidumpWriter {
     dirent->location.rva = 0;
   }
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || defined(__riscv)
   bool WriteCPUInformation(MDRawSystemInfo* sys_info) {
     char vendor_id[sizeof(sys_info->cpu.x86_cpu_info.vendor_id) + 1] = {0};
     static const char vendor_id_name[] = "vendor_id";
@@ -978,6 +978,12 @@ class MinidumpWriter {
 # else
 #  error "This mips ABI is currently not supported (n32)"
 #endif
+#elif defined(__riscv)
+# if __riscv_xlen == 64
+        MD_CPU_ARCHITECTURE_RISCV64;
+# else
+# error "This RISC-V ABI us currently not supported"
+# endif
 #elif defined(__i386__)
         MD_CPU_ARCHITECTURE_X86;
 #else
@@ -1386,7 +1392,7 @@ class MinidumpWriter {
   const char* path_;  // Path to the file where the minidum should be written.
 
   const ucontext_t* const ucontext_;  // also from the signal handler
-#if !defined(__ARM_EABI__) && !defined(__mips__)
+#if !defined(__ARM_EABI__) && !defined(__mips__) && !defined(__riscv)
   const google_breakpad::fpstate_t* const float_state_;  // ditto
 #endif
   LinuxDumper* dumper_;
