@@ -33,7 +33,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "common/basictypes.h"
+#include "basictypes.h"
 
 namespace google_breakpad {
 
